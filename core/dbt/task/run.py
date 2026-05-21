@@ -551,7 +551,8 @@ class ModelRunner(CompileRunner[ModelNode]):
             return
 
         compiled_node = node if isinstance(node, ModelNode) else self.node
-        hook_results = self._run_user_post_hooks(compiled_node, ctx, RunStatus.Error)
+        with self.adapter.connection_named(self.node.unique_id, self.node):
+            hook_results = self._run_user_post_hooks(compiled_node, ctx, RunStatus.Error)
         for hook_result in hook_results:
             if hook_result.status == RunStatus.Error:
                 fire_event(

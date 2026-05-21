@@ -398,31 +398,29 @@ class BaseRunner(Generic[NodeT, RunnerResultT], metaclass=ABCMeta):
         except Exception as e:
             caught_exception = e
             error = self.handle_exception(e, ctx)
-        finally:
-            exc_str = self._safe_release_connection()
 
-            # if releasing failed and the result doesn't have an error yet, set
-            # an error
-            if (
-                exc_str is not None
-                and result is not None
-                and result.status != NodeStatus.Error
-                and error is None
-            ):
-                error = exc_str
+        if caught_exception is not None:
+            try:
+                self.on_failure(caught_exception, ctx.node)
+            except Exception as hook_exc:
+                fire_event(
+                    GenericExceptionOnRun(
+                        unique_id=self.node.unique_id,
+                        exc=f"Failure post-hook raised an exception: {hook_exc}",
+                        node_info=get_node_info(),
+                    )
+                )
+
+        exc_str = self._safe_release_connection()
+        if (
+            exc_str is not None
+            and result is not None
+            and result.status != NodeStatus.Error
+            and error is None
+        ):
+            error = exc_str
 
         if error is not None:
-            if caught_exception is not None:
-                try:
-                    self.on_failure(caught_exception, ctx.node)
-                except Exception as hook_exc:
-                    fire_event(
-                        GenericExceptionOnRun(
-                            unique_id=self.node.unique_id,
-                            exc=f"Failure post-hook raised an exception: {hook_exc}",
-                            node_info=get_node_info(),
-                        )
-                    )
             result = self.error_result(ctx.node, error, started, ctx.timing)
         elif result is not None:
             result = self.from_run_result(result, started, ctx.timing)

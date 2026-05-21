@@ -1,6 +1,38 @@
+import os
+
 import pytest
 
 from dbt.tests.util import run_dbt
+
+
+def _adapters_run_hooks_filters_when() -> bool:
+    import dbt
+
+    hooks_sql = os.path.join(
+        os.path.dirname(dbt.__file__),
+        "include",
+        "global_project",
+        "macros",
+        "materializations",
+        "hooks.sql",
+    )
+    if not os.path.isfile(hooks_sql):
+        return False
+    with open(hooks_sql) as f:
+        contents = f.read()
+    return (
+        "rejectattr('when', 'equalto', 'failure')" in contents
+        and "rejectattr('when', 'equalto', 'always')" in contents
+    )
+
+
+pytestmark = pytest.mark.skipif(
+    not _adapters_run_hooks_filters_when(),
+    reason=(
+        "dbt-adapters run_hooks must filter when=failure and when=always. "
+        "Install patched dbt-adapters: pip install -e /path/to/dbt-adapters/dbt-adapters"
+    ),
+)
 
 FAILING_MODEL = """
 {{ config(
