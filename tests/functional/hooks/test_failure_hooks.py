@@ -1,6 +1,7 @@
 import pytest
 
-from dbt.tests.util import run_dbt
+from dbt.artifacts.resources import HookWhen
+from dbt.tests.util import get_manifest, run_dbt
 
 FAILING_MODEL = """
 {{ config(
@@ -55,6 +56,13 @@ class TestFailureHookRunsOnFailure:
         }
 
     def test_failure_hook_runs_on_failure(self, project):
+        run_dbt(["parse"])
+        manifest = get_manifest(project.project_root)
+        node = manifest.nodes["model.test.failing_model"]
+        whens = {hook.when for hook in node.config.post_hook}
+        assert HookWhen.FAILURE in whens
+        assert HookWhen.ALWAYS in whens
+
         _setup_hook_log(project)
 
         results = run_dbt(["run", "--select", "failing_model"], expect_pass=False)
@@ -84,14 +92,3 @@ class TestSuccessHookRunsOnSuccess:
         assert "success_hook" in events
         assert "always_hook" in events
         assert "failure_hook" not in events
-
-
-def test_failing_model_post_hooks_include_failure_when(project):
-    from dbt.artifacts.resources import HookWhen
-    from dbt.tests.util import get_manifest
-
-    manifest = get_manifest(project.project_root)
-    node = manifest.nodes["model.test.failing_model"]
-    whens = {hook.when for hook in node.config.post_hook}
-    assert HookWhen.FAILURE in whens
-    assert HookWhen.ALWAYS in whens
