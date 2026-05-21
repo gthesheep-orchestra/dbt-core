@@ -378,15 +378,25 @@ class BaseRunner(Generic[NodeT, RunnerResultT], metaclass=ABCMeta):
             error = self._handle_generic_exception(e, ctx)
         return error
 
+    def on_failure(
+        self,
+        error: Exception,
+        node: Any,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        pass
+
     def safe_run(self, manifest: Manifest) -> RunnerResultT:
         started = time.time()
         ctx = ExecutionContext(self.node)
         error = None
         result = None
+        caught_exception: Optional[Exception] = None
 
         try:
             result = self.compile_and_execute(manifest, ctx)
         except Exception as e:
+            caught_exception = e
             error = self.handle_exception(e, ctx)
         finally:
             exc_str = self._safe_release_connection()
@@ -402,6 +412,17 @@ class BaseRunner(Generic[NodeT, RunnerResultT], metaclass=ABCMeta):
                 error = exc_str
 
         if error is not None:
+            if caught_exception is not None:
+                try:
+                    self.on_failure(caught_exception, ctx.node)
+                except Exception as hook_exc:
+                    fire_event(
+                        GenericExceptionOnRun(
+                            unique_id=self.node.unique_id,
+                            exc=f"Failure post-hook raised an exception: {hook_exc}",
+                            node_info=get_node_info(),
+                        )
+                    )
             result = self.error_result(ctx.node, error, started, ctx.timing)
         elif result is not None:
             result = self.from_run_result(result, started, ctx.timing)
