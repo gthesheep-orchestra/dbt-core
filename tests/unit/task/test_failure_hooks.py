@@ -84,3 +84,17 @@ def test_run_post_hooks_after_model_failure_does_not_release_connection():
         runner._run_post_hooks_after_model_failure(model, {})
     mock_hooks.assert_called_once()
     runner.adapter.connection_named.assert_not_called()
+
+
+def test_hook_when_reads_from_hook_object():
+    runner = make_runner()
+    from dbt.artifacts.resources import Hook
+
+    node = MagicMock()
+    node.config.post_hook = [
+        Hook.from_dict({"sql": "select 'fail'", "when": "failure", "transaction": False})
+    ]
+    with patch("dbt.task.run.get_execution_status", return_value=(RunStatus.Success, "OK")):
+        with patch("dbt.task.run.get_rendered", return_value="select 'fail'"):
+            results = runner._run_user_post_hooks(node, {}, RunStatus.Error)
+    assert len(results) == 1

@@ -473,6 +473,17 @@ class ModelRunner(CompileRunner[ModelNode]):
             return get_hook_dict(raw_hook.to_dict(omit_none=True))
         return get_hook_dict(raw_hook)
 
+    def _hook_when(self, raw_hook: Any, hook_dict: Dict[str, Any]) -> HookWhen:
+        if isinstance(raw_hook, Hook):
+            when = raw_hook.when
+            if isinstance(when, HookWhen):
+                return when
+            return HookWhen(str(when))
+        when = hook_dict.get("when", HookWhen.SUCCESS)
+        if isinstance(when, HookWhen):
+            return when
+        return HookWhen(str(when))
+
     def _default_post_hook_whens(self, model_status: RunStatus) -> Set[HookWhen]:
         if model_status == RunStatus.Success:
             return {HookWhen.ALWAYS}
@@ -491,7 +502,7 @@ class ModelRunner(CompileRunner[ModelNode]):
         hook_results: List[RunHookResult] = []
         for raw_hook in model.config.post_hook or []:
             hook_dict = self._hook_to_dict(raw_hook)
-            when = HookWhen(hook_dict.get("when", HookWhen.SUCCESS))
+            when = self._hook_when(raw_hook, hook_dict)
             if when not in whens:
                 continue
 
@@ -519,9 +530,8 @@ class ModelRunner(CompileRunner[ModelNode]):
                     sql=rendered_sql,
                 )
             )
-
-        if any(r.status == RunStatus.Success for r in hook_results):
-            self.adapter.commit_if_has_connection()
+            if status == RunStatus.Success:
+                self.adapter.commit_if_has_connection()
 
         return hook_results
 

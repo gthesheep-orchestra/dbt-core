@@ -84,3 +84,14 @@ class TestSuccessHookRunsOnSuccess:
         assert "success_hook" in events
         assert "always_hook" in events
         assert "failure_hook" not in events
+
+
+def test_failing_model_post_hooks_include_failure_when(project):
+    from dbt.artifacts.resources import HookWhen
+    from dbt.tests.util import get_manifest
+
+    manifest = get_manifest(project.project_root)
+    node = manifest.nodes["model.test.failing_model"]
+    whens = {hook.when for hook in node.config.post_hook}
+    assert HookWhen.FAILURE in whens
+    assert HookWhen.ALWAYS in whens

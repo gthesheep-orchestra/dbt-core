@@ -190,6 +190,13 @@ class ConfiguredParser(
         convert it from the yucky maybe-a-string, maybe-a-dict to a dict.
         """
         # Like most of parsing, this is a horrible hack :(
+        for underscore, hyphen in (("pre_hook", "pre-hook"), ("post_hook", "post-hook")):
+            if underscore in config:
+                if hyphen in config:
+                    raise ParsingError(
+                        f"Found both '{underscore}' and '{hyphen}' in config; use only '{hyphen}'"
+                    )
+                config[hyphen] = config.pop(underscore)
         for key in hooks.ModelHookType:
             if key in config:
                 config[key] = [hooks.get_hook_dict(h) for h in config[key]]
