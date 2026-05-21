@@ -27,6 +27,25 @@ select 1 as id
 """
 
 
+def _hook_log_table(project) -> str:
+    return f"{project.test_schema}.hook_log"
+
+
+def _setup_hook_log(project) -> None:
+    table = _hook_log_table(project)
+    project.run_sql(
+        f"create table if not exists {table} (event varchar, ts timestamp)",
+        fetch=None,
+    )
+    project.run_sql(f"delete from {table}", fetch=None)
+
+
+def _hook_log_events(project) -> list:
+    table = _hook_log_table(project)
+    rows = project.run_sql(f"select event from {table} order by ts", fetch="all")
+    return [r[0] for r in rows]
+
+
 class TestFailureHookRunsOnFailure:
     @pytest.fixture(scope="class")
     def models(self):
@@ -36,17 +55,12 @@ class TestFailureHookRunsOnFailure:
         }
 
     def test_failure_hook_runs_on_failure(self, project):
-        project.run_sql(
-            "create table if not exists hook_log (event varchar, ts timestamp)",
-            fetch=None,
-        )
-        project.run_sql("delete from hook_log", fetch=None)
+        _setup_hook_log(project)
 
         results = run_dbt(["run", "--select", "failing_model"], expect_pass=False)
         assert results[0].status == "error"
 
-        rows = project.run_sql("select event from hook_log order by ts", fetch="all")
-        events = [r[0] for r in rows]
+        events = _hook_log_events(project)
         assert "failure_hook" in events
         assert "always_hook" in events
         assert "success_hook" not in events
@@ -61,17 +75,12 @@ class TestSuccessHookRunsOnSuccess:
         }
 
     def test_success_hook_runs_on_success(self, project):
-        project.run_sql(
-            "create table if not exists hook_log (event varchar, ts timestamp)",
-            fetch=None,
-        )
-        project.run_sql("delete from hook_log", fetch=None)
+        _setup_hook_log(project)
 
         results = run_dbt(["run", "--select", "passing_model"])
         assert results[0].status == "success"
 
-        rows = project.run_sql("select event from hook_log order by ts", fetch="all")
-        events = [r[0] for r in rows]
+        events = _hook_log_events(project)
         assert "success_hook" in events
         assert "always_hook" in events
         assert "failure_hook" not in events
