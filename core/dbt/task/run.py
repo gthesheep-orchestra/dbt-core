@@ -520,6 +520,9 @@ class ModelRunner(CompileRunner[ModelNode]):
                 )
             )
 
+        if any(r.status == RunStatus.Success for r in hook_results):
+            self.adapter.commit_if_has_connection()
+
         return hook_results
 
     def _merge_hook_results(
@@ -553,8 +556,7 @@ class ModelRunner(CompileRunner[ModelNode]):
         if self._failure_post_hooks_ran:
             return
         self._failure_post_hooks_ran = True
-        with self.adapter.connection_named(self.node.unique_id, self.node):
-            hook_results = self._run_user_post_hooks(model, context, RunStatus.Error)
+        hook_results = self._run_user_post_hooks(model, context, RunStatus.Error)
         for hook_result in hook_results:
             if hook_result.status == RunStatus.Error:
                 fire_event(
@@ -586,8 +588,11 @@ class ModelRunner(CompileRunner[ModelNode]):
             return
 
         compiled_node = node if isinstance(node, ModelNode) else self.node
-        with self.adapter.connection_named(self.node.unique_id, self.node):
+        with self.adapter.connection_named(
+            self.node.unique_id, self.node, should_release_connection=False
+        ):
             hook_results = self._run_user_post_hooks(compiled_node, ctx, RunStatus.Error)
+        self.adapter.release_connection()
         for hook_result in hook_results:
             if hook_result.status == RunStatus.Error:
                 fire_event(

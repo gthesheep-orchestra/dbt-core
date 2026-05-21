@@ -64,3 +64,23 @@ def test_merge_hook_results_partial_success():
     hook_results = [RunHookResult(status=RunStatus.Error, message="boom", sql="select fail")]
     merged = runner._merge_hook_results(model_result, hook_results)
     assert merged.status == RunStatus.PartialSuccess
+
+
+def test_run_user_post_hooks_commits_on_success():
+    runner = make_runner()
+    node = make_node([{"sql": "select 1", "when": "always", "transaction": False}])
+    with patch("dbt.task.run.get_execution_status", return_value=(RunStatus.Success, "OK")):
+        with patch("dbt.task.run.get_rendered", return_value="select 1"):
+            runner._run_user_post_hooks(node, {}, RunStatus.Success)
+    runner.adapter.commit_if_has_connection.assert_called_once()
+
+
+def test_run_post_hooks_after_model_failure_does_not_release_connection():
+    runner = make_runner()
+    runner._failure_post_hooks_ran = False
+    runner.node = MagicMock()
+    model = make_node([{"sql": "select 1", "when": "failure", "transaction": False}])
+    with patch.object(runner, "_run_user_post_hooks", return_value=[]) as mock_hooks:
+        runner._run_post_hooks_after_model_failure(model, {})
+    mock_hooks.assert_called_once()
+    runner.adapter.connection_named.assert_not_called()
