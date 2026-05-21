@@ -389,6 +389,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -420,6 +429,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -1264,6 +1282,15 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "when": {
+                                      "type": "string",
+                                      "enum": [
+                                        "success",
+                                        "failure",
+                                        "always"
+                                      ],
+                                      "default": "success"
                                     }
                                   },
                                   "additionalProperties": false,
@@ -1295,6 +1322,15 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "when": {
+                                      "type": "string",
+                                      "enum": [
+                                        "success",
+                                        "failure",
+                                        "always"
+                                      ],
+                                      "default": "success"
                                     }
                                   },
                                   "additionalProperties": false,
@@ -1664,6 +1700,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -1695,6 +1740,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -3545,6 +3599,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -3576,6 +3639,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -4565,6 +4637,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -4596,6 +4677,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -5820,6 +5910,15 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "when": {
+                                      "type": "string",
+                                      "enum": [
+                                        "success",
+                                        "failure",
+                                        "always"
+                                      ],
+                                      "default": "success"
                                     }
                                   },
                                   "additionalProperties": false,
@@ -5851,6 +5950,15 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "when": {
+                                      "type": "string",
+                                      "enum": [
+                                        "success",
+                                        "failure",
+                                        "always"
+                                      ],
+                                      "default": "success"
                                     }
                                   },
                                   "additionalProperties": false,
@@ -6274,6 +6382,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -6305,6 +6422,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -8216,6 +8342,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -8247,6 +8382,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -9367,6 +9511,15 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "when": {
+                                      "type": "string",
+                                      "enum": [
+                                        "success",
+                                        "failure",
+                                        "always"
+                                      ],
+                                      "default": "success"
                                     }
                                   },
                                   "additionalProperties": false,
@@ -9398,6 +9551,15 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "when": {
+                                      "type": "string",
+                                      "enum": [
+                                        "success",
+                                        "failure",
+                                        "always"
+                                      ],
+                                      "default": "success"
                                     }
                                   },
                                   "additionalProperties": false,
@@ -9792,6 +9954,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -9823,6 +9994,15 @@
                             }
                           ],
                           "default": null
+                        },
+                        "when": {
+                          "type": "string",
+                          "enum": [
+                            "success",
+                            "failure",
+                            "always"
+                          ],
+                          "default": "success"
                         }
                       },
                       "additionalProperties": false,
@@ -11016,6 +11196,15 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "when": {
+                                      "type": "string",
+                                      "enum": [
+                                        "success",
+                                        "failure",
+                                        "always"
+                                      ],
+                                      "default": "success"
                                     }
                                   },
                                   "additionalProperties": false,
@@ -11047,6 +11236,15 @@
                                         }
                                       ],
                                       "default": null
+                                    },
+                                    "when": {
+                                      "type": "string",
+                                      "enum": [
+                                        "success",
+                                        "failure",
+                                        "always"
+                                      ],
+                                      "default": "success"
                                     }
                                   },
                                   "additionalProperties": false,
@@ -14748,6 +14946,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -14779,6 +14986,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -15623,6 +15839,15 @@
                                               }
                                             ],
                                             "default": null
+                                          },
+                                          "when": {
+                                            "type": "string",
+                                            "enum": [
+                                              "success",
+                                              "failure",
+                                              "always"
+                                            ],
+                                            "default": "success"
                                           }
                                         },
                                         "additionalProperties": false,
@@ -15654,6 +15879,15 @@
                                               }
                                             ],
                                             "default": null
+                                          },
+                                          "when": {
+                                            "type": "string",
+                                            "enum": [
+                                              "success",
+                                              "failure",
+                                              "always"
+                                            ],
+                                            "default": "success"
                                           }
                                         },
                                         "additionalProperties": false,
@@ -16023,6 +16257,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -16054,6 +16297,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -17904,6 +18156,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -17935,6 +18196,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -18924,6 +19194,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -18955,6 +19234,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -20179,6 +20467,15 @@
                                               }
                                             ],
                                             "default": null
+                                          },
+                                          "when": {
+                                            "type": "string",
+                                            "enum": [
+                                              "success",
+                                              "failure",
+                                              "always"
+                                            ],
+                                            "default": "success"
                                           }
                                         },
                                         "additionalProperties": false,
@@ -20210,6 +20507,15 @@
                                               }
                                             ],
                                             "default": null
+                                          },
+                                          "when": {
+                                            "type": "string",
+                                            "enum": [
+                                              "success",
+                                              "failure",
+                                              "always"
+                                            ],
+                                            "default": "success"
                                           }
                                         },
                                         "additionalProperties": false,
@@ -20633,6 +20939,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -20664,6 +20979,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -22575,6 +22899,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -22606,6 +22939,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -23726,6 +24068,15 @@
                                               }
                                             ],
                                             "default": null
+                                          },
+                                          "when": {
+                                            "type": "string",
+                                            "enum": [
+                                              "success",
+                                              "failure",
+                                              "always"
+                                            ],
+                                            "default": "success"
                                           }
                                         },
                                         "additionalProperties": false,
@@ -23757,6 +24108,15 @@
                                               }
                                             ],
                                             "default": null
+                                          },
+                                          "when": {
+                                            "type": "string",
+                                            "enum": [
+                                              "success",
+                                              "failure",
+                                              "always"
+                                            ],
+                                            "default": "success"
                                           }
                                         },
                                         "additionalProperties": false,
@@ -24151,6 +24511,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -24182,6 +24551,15 @@
                                   }
                                 ],
                                 "default": null
+                              },
+                              "when": {
+                                "type": "string",
+                                "enum": [
+                                  "success",
+                                  "failure",
+                                  "always"
+                                ],
+                                "default": "success"
                               }
                             },
                             "additionalProperties": false,
@@ -25375,6 +25753,15 @@
                                               }
                                             ],
                                             "default": null
+                                          },
+                                          "when": {
+                                            "type": "string",
+                                            "enum": [
+                                              "success",
+                                              "failure",
+                                              "always"
+                                            ],
+                                            "default": "success"
                                           }
                                         },
                                         "additionalProperties": false,
@@ -25406,6 +25793,15 @@
                                               }
                                             ],
                                             "default": null
+                                          },
+                                          "when": {
+                                            "type": "string",
+                                            "enum": [
+                                              "success",
+                                              "failure",
+                                              "always"
+                                            ],
+                                            "default": "success"
                                           }
                                         },
                                         "additionalProperties": false,
@@ -31993,6 +32389,15 @@
                         }
                       ],
                       "default": null
+                    },
+                    "when": {
+                      "type": "string",
+                      "enum": [
+                        "success",
+                        "failure",
+                        "always"
+                      ],
+                      "default": "success"
                     }
                   },
                   "additionalProperties": false,
@@ -32024,6 +32429,15 @@
                         }
                       ],
                       "default": null
+                    },
+                    "when": {
+                      "type": "string",
+                      "enum": [
+                        "success",
+                        "failure",
+                        "always"
+                      ],
+                      "default": "success"
                     }
                   },
                   "additionalProperties": false,
@@ -33217,6 +33631,15 @@
                                     }
                                   ],
                                   "default": null
+                                },
+                                "when": {
+                                  "type": "string",
+                                  "enum": [
+                                    "success",
+                                    "failure",
+                                    "always"
+                                  ],
+                                  "default": "success"
                                 }
                               },
                               "additionalProperties": false,
@@ -33248,6 +33671,15 @@
                                     }
                                   ],
                                   "default": null
+                                },
+                                "when": {
+                                  "type": "string",
+                                  "enum": [
+                                    "success",
+                                    "failure",
+                                    "always"
+                                  ],
+                                  "default": "success"
                                 }
                               },
                               "additionalProperties": false,

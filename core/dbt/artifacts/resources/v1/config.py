@@ -13,7 +13,13 @@ from dbt.flags import get_flags
 from dbt_common.contracts.config.base import BaseConfig, CompareBehavior, MergeBehavior
 from dbt_common.contracts.config.materialization import OnConfigurationChangeOption
 from dbt_common.contracts.config.metadata import Metadata, ShowBehavior
-from dbt_common.dataclass_schema import ValidationError, dbtClassMixin
+from dbt_common.dataclass_schema import StrEnum, ValidationError, dbtClassMixin
+
+
+class HookWhen(StrEnum):
+    SUCCESS = "success"
+    FAILURE = "failure"
+    ALWAYS = "always"
 
 
 def list_str() -> List[str]:
@@ -42,6 +48,7 @@ class Hook(dbtClassMixin):
     sql: str
     transaction: bool = True
     index: Optional[int] = None
+    when: HookWhen = HookWhen.SUCCESS
 
 
 @dataclass

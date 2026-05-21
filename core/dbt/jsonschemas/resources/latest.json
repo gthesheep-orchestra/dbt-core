@@ -4087,6 +4087,15 @@
               "pattern": "^\\{.*\\}$"
             }
           ]
+        },
+        "when": {
+          "type": "string",
+          "enum": [
+            "success",
+            "failure",
+            "always"
+          ],
+          "default": "success"
         }
       },
       "additionalProperties": false
