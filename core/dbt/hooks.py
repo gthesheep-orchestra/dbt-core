@@ -14,8 +14,14 @@ def get_hook_dict(source: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
     Hook.from_dict
     """
     if isinstance(source, dict):
-        return source
+        result = dict(source)
+        result.setdefault("when", "success")
+        return result
     try:
-        return json.loads(source)
+        result = json.loads(source)
+        if isinstance(result, dict):
+            result.setdefault("when", "success")
+            return result
     except ValueError:
-        return {"sql": source}
+        pass
+    return {"sql": source, "transaction": True, "when": "success"}

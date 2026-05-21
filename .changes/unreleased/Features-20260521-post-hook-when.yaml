@@ -1,0 +1,5 @@
+kind: Features
+body: Add `when` field to post-hooks (`success`, `failure`, `always`) and run failure and always hooks from the Python runner when models fail
+time: 2026-05-21T11:35:00.000000000Z
+custom:
+  Author: Cursor Agent

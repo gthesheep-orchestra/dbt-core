@@ -29,6 +29,7 @@ from dbt.artifacts.resources.v1.components import (
 )
 from dbt.artifacts.resources.v1.config import (
     Hook,
+    HookWhen,
     NodeAndTestConfig,
     NodeConfig,
     TestConfig,

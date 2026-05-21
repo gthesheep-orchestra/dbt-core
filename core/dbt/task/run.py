@@ -4,7 +4,7 @@ import functools
 import threading
 import time
 from copy import deepcopy
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from dataclasses import replace as dataclass_replace
 from datetime import datetime, timezone
 from typing import (
@@ -27,7 +27,7 @@ from dbt.adapters.capability import Capability
 from dbt.adapters.catalogs import DbtCatalogIntegrationNotFoundError
 from dbt.adapters.events.types import FinishedRunningStats
 from dbt.adapters.exceptions import MissingMaterializationError
-from dbt.artifacts.resources import Catalog, Hook
+from dbt.artifacts.resources import Catalog, Hook, HookWhen
 from dbt.artifacts.schemas.batch_results import BatchResults, BatchType
 from dbt.artifacts.schemas.overload_results import OverloadResults
 from dbt.artifacts.schemas.results import (
@@ -39,7 +39,7 @@ from dbt.artifacts.schemas.results import (
 )
 from dbt.artifacts.schemas.run import RunResult
 from dbt.cli.flags import Flags
-from dbt.clients.jinja import MacroGenerator
+from dbt.clients.jinja import MacroGenerator, get_rendered
 from dbt.config import RuntimeConfig
 from dbt.context.providers import generate_runtime_model_context
 from dbt.contracts.graph.manifest import Manifest
@@ -135,6 +135,13 @@ def get_execution_status(sql: str, adapter: BaseAdapter) -> Tuple[RunStatus, str
         message = str(exc)
 
     return (status, message)
+
+
+@dataclass
+class RunHookResult:
+    status: RunStatus
+    message: str
+    sql: str
 
 
 def _get_adapter_info(adapter, run_model_result) -> Dict[str, Any]:
@@ -450,7 +457,114 @@ class ModelRunner(CompileRunner[ModelNode]):
                 )
         return materialization_macro
 
+    def _hook_to_dict(self, raw_hook: Any) -> Dict[str, Any]:
+        if isinstance(raw_hook, Hook):
+            return get_hook_dict(raw_hook.to_dict(omit_none=True))
+        return get_hook_dict(raw_hook)
+
+    def _default_post_hook_whens(self, model_status: RunStatus) -> Set[HookWhen]:
+        if model_status == RunStatus.Success:
+            return {HookWhen.ALWAYS}
+        return {HookWhen.FAILURE, HookWhen.ALWAYS}
+
+    def _run_user_post_hooks(
+        self,
+        model: ModelNode,
+        context: Dict[str, Any],
+        model_status: RunStatus,
+        whens: Optional[Set[HookWhen]] = None,
+    ) -> List[RunHookResult]:
+        if whens is None:
+            whens = self._default_post_hook_whens(model_status)
+
+        hook_results: List[RunHookResult] = []
+        for raw_hook in model.config.post_hook or []:
+            hook_dict = self._hook_to_dict(raw_hook)
+            when = HookWhen(hook_dict.get("when", HookWhen.SUCCESS))
+            if when not in whens:
+                continue
+
+            hook_sql = hook_dict.get("sql", "")
+            try:
+                rendered_sql = get_rendered(hook_sql, context, model)
+                if not isinstance(rendered_sql, str):
+                    rendered_sql = str(rendered_sql)
+            except Exception as compile_exc:
+                hook_results.append(
+                    RunHookResult(
+                        status=RunStatus.Error,
+                        message=f"Hook compilation failed: {compile_exc}",
+                        sql=hook_sql,
+                    )
+                )
+                continue
+
+            status, message = get_execution_status(rendered_sql, self.adapter)
+            hook_results.append(
+                RunHookResult(
+                    status=status,
+                    message=message,
+                    sql=rendered_sql,
+                )
+            )
+
+        return hook_results
+
+    def _merge_hook_results(
+        self,
+        model_result: RunResult,
+        hook_results: List[RunHookResult],
+    ) -> RunResult:
+        if not hook_results:
+            return model_result
+
+        any_hook_failed = any(r.status == RunStatus.Error for r in hook_results)
+        if model_result.status == RunStatus.Success and any_hook_failed:
+            failed_messages = [r.message for r in hook_results if r.status == RunStatus.Error]
+            return dataclass_replace(
+                model_result,
+                status=RunStatus.PartialSuccess,
+                message=(
+                    f"Model succeeded but {len(failed_messages)} post-hook(s) failed: "
+                    + "; ".join(failed_messages)[:500]
+                ),
+            )
+
+        return model_result
+
+    def on_failure(
+        self,
+        error: Exception,
+        node: Any,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        ctx = context or self._last_execution_context
+        if ctx is None:
+            fire_event(
+                MicrobatchExecutionDebug(
+                    msg=(
+                        f"Skipping failure post-hooks for {getattr(node, 'unique_id', node)}: "
+                        "no execution context available (likely a compilation error)"
+                    )
+                )
+            )
+            return
+
+        compiled_node = node if isinstance(node, ModelNode) else self.node
+        hook_results = self._run_user_post_hooks(compiled_node, ctx, RunStatus.Error)
+        for hook_result in hook_results:
+            if hook_result.status == RunStatus.Error:
+                fire_event(
+                    GenericExceptionOnRun(
+                        unique_id=compiled_node.unique_id,
+                        exc=f"Post-hook failed: {hook_result.message}",
+                        node_info=compiled_node.node_info,
+                    )
+                )
+
+
     def execute(self, model, manifest) -> RunResult:
+        self._last_execution_context = None
         context = generate_runtime_model_context(model, self.config, manifest)
 
         if "config" not in context:
@@ -460,14 +574,35 @@ class ModelRunner(CompileRunner[ModelNode]):
 
         materialization_macro = self._get_materialization_macro(model, manifest)
         hook_ctx = self.adapter.pre_model_hook(context["config"])
+        self._last_execution_context = context
+
+        result = self._execute_model(
+            hook_ctx, context["config"], model, context, materialization_macro, manifest
+        )
+        hook_results = self._run_user_post_hooks(model, context, result.status)
+        return self._merge_hook_results(result, hook_results)
+
+
+class MicrobatchBatchRunner(ModelRunner):
+    """Handles the running of individual batches"""
+
+    def execute(self, model, manifest) -> RunResult:
+        self._last_execution_context = None
+        context = generate_runtime_model_context(model, self.config, manifest)
+
+        if "config" not in context:
+            raise DbtInternalError(
+                "Invalid materialization context generated, missing config: {}".format(context)
+            )
+
+        materialization_macro = self._get_materialization_macro(model, manifest)
+        hook_ctx = self.adapter.pre_model_hook(context["config"])
+        self._last_execution_context = context
 
         return self._execute_model(
             hook_ctx, context["config"], model, context, materialization_macro, manifest
         )
 
-
-class MicrobatchBatchRunner(ModelRunner):
-    """Handles the running of individual batches"""
 
     def __init__(
         self,
@@ -883,6 +1018,7 @@ class MicrobatchModelRunner(ModelRunner):
 
     def execute(self, model: ModelNode, manifest: Manifest) -> RunResult:
         # Execution really means orchestration in this case
+        self._last_execution_context = generate_runtime_model_context(model, self.config, manifest)
 
         batches = self.get_batches(model=model)
         relation_exists = self._has_relation(model=model)
@@ -910,8 +1046,7 @@ class MicrobatchModelRunner(ModelRunner):
         batch_idx += 1
         skip_batches = batch_results[0].status != RunStatus.Success
 
-        # Run all batches except first and last batch, in parallel if possible
-        while batch_idx < len(batches) - 1:
+        while batch_idx < len(batches):
             relation_exists = self.parent_task._submit_batch(
                 node=model,
                 adapter=self.adapter,
@@ -924,49 +1059,30 @@ class MicrobatchModelRunner(ModelRunner):
             )
             batch_idx += 1
 
-        # Wait until all submitted batches have completed
-        while len(batch_results) != batch_idx:
-            # Check if the pool was closed, because if it was, then the main thread is trying to exit.
-            # If the main thread is trying to exit, we need to shutdown. If we _don't_ shutdown, then
-            # batches will continue to execute and we'll delay the run from stopping
+        while len(batch_results) < len(batches):
             if self.pool.is_closed():
-                # It's technically possible for more results to come in while we clean up
-                # instead we're going to say the didn't finish, regardless of if they finished
-                # or not. Thus, lets get a copy of the results as they exist right "now".
                 frozen_batch_results = deepcopy(batch_results)
                 self.merge_batch_results(result, frozen_batch_results)
                 self._update_result_with_unfinished_batches(result, batches)
                 return result
 
-            # breifly sleep so that this thread doesn't go brrrrr while waiting
             time.sleep(0.1)
 
-        # Only run "last" batch if there is more than one batch
-        if len(batches) != 1:
-            # Final batch runs once all others complete to ensure post_hook runs at the end
-            self.parent_task._submit_batch(
-                node=model,
-                adapter=self.adapter,
-                relation_exists=relation_exists,
-                batches=batches,
-                batch_idx=batch_idx,
-                batch_results=batch_results,
-                pool=self.pool,
-                force_sequential_run=True,
-                skip=skip_batches,
-            )
-
-        # Finalize run: merge results, track model run, and print final result line
         self.merge_batch_results(result, batch_results)
+
+        if self._last_execution_context is not None:
+            hook_results = self._run_user_post_hooks(
+                model, self._last_execution_context, result.status
+            )
+            result = self._merge_hook_results(result, hook_results)
 
         pointer_relations: List[BaseRelation] = []
         if result.status == RunStatus.Success and self._should_create_latest_version_pointer(
             model
         ):
-            context = generate_runtime_model_context(model, self.config, manifest)
             source_relations = [self.adapter.Relation.create_from(self.config, model)]  # type: ignore[arg-type]
             pointer_relations = self._materialize_latest_version_pointer(
-                manifest, model, context, source_relations
+                manifest, model, self._last_execution_context, source_relations
             )
         for relation in pointer_relations:
             self.adapter.cache_added(relation.incorporate(dbt_created=True))
@@ -1058,9 +1174,8 @@ class RunTask(CompileTask):
         if batch_idx != 0:
             node_copy.config.pre_hook = []
 
-        # Only run post_hook(s) for last batch
-        if batch_idx != len(batches) - 1:
-            node_copy.config.post_hook = []
+        # post-hooks run once from Python after all batches complete
+        node_copy.config.post_hook = []
 
         # TODO: We should be doing self.get_runner, however doing so
         # currently causes the tracking of how many nodes there are to
