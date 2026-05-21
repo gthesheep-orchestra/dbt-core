@@ -1,56 +1,6 @@
-import os
-
 import pytest
 
 from dbt.tests.util import run_dbt
-
-
-def _find_run_hooks_sql() -> str | None:
-    import dbt
-
-    for path in getattr(dbt, "__path__", []):
-        hooks_sql = os.path.join(
-            path,
-            "include",
-            "global_project",
-            "macros",
-            "materializations",
-            "hooks.sql",
-        )
-        if os.path.isfile(hooks_sql):
-            return hooks_sql
-    return None
-
-
-def _adapters_run_hooks_filters_when() -> bool:
-    hooks_sql = _find_run_hooks_sql()
-    if hooks_sql is None:
-        return False
-    with open(hooks_sql) as f:
-        contents = f.read()
-    return (
-        "rejectattr('when', 'equalto', 'failure')" in contents
-        and "rejectattr('when', 'equalto', 'always')" in contents
-    )
-
-
-def _adapters_skip_reason() -> str:
-    hooks_sql = _find_run_hooks_sql()
-    if hooks_sql is None:
-        return (
-            "Could not find dbt global_project hooks.sql on the dbt namespace path. "
-            "Ensure dbt-adapters is installed in this environment."
-        )
-    return (
-        f"dbt-adapters run_hooks at {hooks_sql} must filter when=failure and when=always. "
-        "Install patched dbt-adapters: hatch run pip install -e /path/to/dbt-adapters/dbt-adapters"
-    )
-
-
-pytestmark = pytest.mark.skipif(
-    not _adapters_run_hooks_filters_when(),
-    reason=_adapters_skip_reason(),
-)
 
 FAILING_MODEL = """
 {{ config(
