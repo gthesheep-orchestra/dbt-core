@@ -5,18 +5,26 @@ import pytest
 from dbt.tests.util import run_dbt
 
 
-def _adapters_run_hooks_filters_when() -> bool:
+def _find_run_hooks_sql() -> str | None:
     import dbt
 
-    hooks_sql = os.path.join(
-        os.path.dirname(dbt.__file__),
-        "include",
-        "global_project",
-        "macros",
-        "materializations",
-        "hooks.sql",
-    )
-    if not os.path.isfile(hooks_sql):
+    for path in getattr(dbt, "__path__", []):
+        hooks_sql = os.path.join(
+            path,
+            "include",
+            "global_project",
+            "macros",
+            "materializations",
+            "hooks.sql",
+        )
+        if os.path.isfile(hooks_sql):
+            return hooks_sql
+    return None
+
+
+def _adapters_run_hooks_filters_when() -> bool:
+    hooks_sql = _find_run_hooks_sql()
+    if hooks_sql is None:
         return False
     with open(hooks_sql) as f:
         contents = f.read()
@@ -26,12 +34,22 @@ def _adapters_run_hooks_filters_when() -> bool:
     )
 
 
+def _adapters_skip_reason() -> str:
+    hooks_sql = _find_run_hooks_sql()
+    if hooks_sql is None:
+        return (
+            "Could not find dbt global_project hooks.sql on the dbt namespace path. "
+            "Ensure dbt-adapters is installed in this environment."
+        )
+    return (
+        f"dbt-adapters run_hooks at {hooks_sql} must filter when=failure and when=always. "
+        "Install patched dbt-adapters: hatch run pip install -e /path/to/dbt-adapters/dbt-adapters"
+    )
+
+
 pytestmark = pytest.mark.skipif(
     not _adapters_run_hooks_filters_when(),
-    reason=(
-        "dbt-adapters run_hooks must filter when=failure and when=always. "
-        "Install patched dbt-adapters: pip install -e /path/to/dbt-adapters/dbt-adapters"
-    ),
+    reason=_adapters_skip_reason(),
 )
 
 FAILING_MODEL = """
