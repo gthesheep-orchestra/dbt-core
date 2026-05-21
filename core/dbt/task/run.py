@@ -117,12 +117,14 @@ def get_hook(source, index):
     return Hook.from_dict(hook_dict)
 
 
-def get_execution_status(sql: str, adapter: BaseAdapter) -> Tuple[RunStatus, str]:
+def get_execution_status(
+    sql: str, adapter: BaseAdapter, auto_begin: bool = False
+) -> Tuple[RunStatus, str]:
     if not sql.strip():
         return RunStatus.Success, "OK"
 
     try:
-        response, _ = adapter.execute(sql, auto_begin=False, fetch=False)
+        response, _ = adapter.execute(sql, auto_begin=auto_begin, fetch=False)
         status = RunStatus.Success
         message = response._message
     except (KeyboardInterrupt, SystemExit):
@@ -142,6 +144,12 @@ class RunHookResult:
     status: RunStatus
     message: str
     sql: str
+
+
+def _prepare_connection_for_post_hooks(adapter: BaseAdapter) -> None:
+    rollback_if_open = getattr(adapter.connections, "rollback_if_open", None)
+    if callable(rollback_if_open):
+        rollback_if_open()
 
 
 def _get_adapter_info(adapter, run_model_result) -> Dict[str, Any]:
@@ -431,6 +439,9 @@ class ModelRunner(CompileRunner[ModelNode]):
             relations.extend(
                 self._materialize_latest_version_pointer(manifest, model, context, relations)
             )
+        except Exception:
+            self._run_post_hooks_after_model_failure(model, context)
+            raise
         finally:
             self.adapter.post_model_hook(context_config, hook_ctx)
 
@@ -499,7 +510,8 @@ class ModelRunner(CompileRunner[ModelNode]):
                 )
                 continue
 
-            status, message = get_execution_status(rendered_sql, self.adapter)
+            _prepare_connection_for_post_hooks(self.adapter)
+            status, message = get_execution_status(rendered_sql, self.adapter, auto_begin=True)
             hook_results.append(
                 RunHookResult(
                     status=status,
@@ -532,12 +544,35 @@ class ModelRunner(CompileRunner[ModelNode]):
 
         return model_result
 
+
+    def _run_post_hooks_after_model_failure(
+        self,
+        model: ModelNode,
+        context: Dict[str, Any],
+    ) -> None:
+        if self._failure_post_hooks_ran:
+            return
+        self._failure_post_hooks_ran = True
+        with self.adapter.connection_named(self.node.unique_id, self.node):
+            hook_results = self._run_user_post_hooks(model, context, RunStatus.Error)
+        for hook_result in hook_results:
+            if hook_result.status == RunStatus.Error:
+                fire_event(
+                    GenericExceptionOnRun(
+                        unique_id=model.unique_id,
+                        exc=f"Post-hook failed: {hook_result.message}",
+                        node_info=model.node_info,
+                    )
+                )
+
     def on_failure(
         self,
         error: Exception,
         node: Any,
         context: Optional[Dict[str, Any]] = None,
     ) -> None:
+        if self._failure_post_hooks_ran:
+            return
         ctx = context or self._last_execution_context
         if ctx is None:
             fire_event(
@@ -566,6 +601,7 @@ class ModelRunner(CompileRunner[ModelNode]):
 
     def execute(self, model, manifest) -> RunResult:
         self._last_execution_context = None
+        self._failure_post_hooks_ran = False
         context = generate_runtime_model_context(model, self.config, manifest)
 
         if "config" not in context:
@@ -589,6 +625,7 @@ class MicrobatchBatchRunner(ModelRunner):
 
     def execute(self, model, manifest) -> RunResult:
         self._last_execution_context = None
+        self._failure_post_hooks_ran = False
         context = generate_runtime_model_context(model, self.config, manifest)
 
         if "config" not in context:
